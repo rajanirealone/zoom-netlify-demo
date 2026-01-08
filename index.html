@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Zoom Meetings</title>
+  <style>
+    body { font-family: Arial; padding: 30px; background: #f9f9f9; }
+    .meeting { background: white; padding: 15px; margin-bottom: 15px;
+      border-radius: 6px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+    a { color: #0b5cff; font-weight: bold; }
+  </style>
+</head>
+<body>
+<h2>📅 Upcoming Zoom Meetings</h2>
+<div id="meetings">Loading meetings...</div>
+
+<script>
+fetch("/.netlify/functions/zoomMeetings")
+  .then(res => res.json())
+  .then(meetings => {
+    const container = document.getElementById("meetings");
+    container.innerHTML = "";
+    if (!meetings.length) {
+      container.innerHTML = "No upcoming meetings";
+      return;
+    }
+    meetings.forEach(m => {
+      container.innerHTML += `
+        <div class="meeting">
+          <h3>${m.topic}</h3>
+          <p><b>Date:</b> ${new Date(m.start_time).toLocaleString()}</p>
+          <a href="${m.join_url}" target="_blank">Join Zoom</a>
+        </div>`;
+    });
+  })
+  .catch(() => {
+    document.getElementById("meetings").innerText = "Error loading meetings";
+  });
+</script>
+</body>
+</html>
