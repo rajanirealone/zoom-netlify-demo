@@ -2,7 +2,7 @@ const axios = require("axios");
 
 exports.handler = async () => {
   try {
-    // 1. Get OAuth token
+    // 1️⃣ Get access token (Server-to-Server OAuth)
     const tokenRes = await axios.post(
       "https://zoom.us/oauth/token",
       null,
@@ -20,26 +20,28 @@ exports.handler = async () => {
 
     const accessToken = tokenRes.data.access_token;
 
-    // 2. Get meetings
+    // 2️⃣ Fetch meetings
     const meetingsRes = await axios.get(
       `https://api.zoom.us/v2/users/${process.env.ZOOM_USER_ID}/meetings?type=scheduled`,
       {
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
       }
     );
 
+    // 3️⃣ Return meetings
     return {
       statusCode: 200,
       body: JSON.stringify(meetingsRes.data.meetings),
     };
   } catch (error) {
-    // 🔥 SHOW REAL ERROR
     return {
       statusCode: 500,
       body: JSON.stringify({
         message: "Zoom API failed",
-        zoomError: error.response?.data || error.message,
         status: error.response?.status,
+        zoomError: error.response?.data || error.message,
       }),
     };
   }
