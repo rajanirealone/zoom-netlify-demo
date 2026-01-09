@@ -1,30 +1,40 @@
 const axios = require("axios");
+const jwt = require("jsonwebtoken");
 
 exports.handler = async () => {
   try {
-    // Use JWT token for simplicity
-    const jwt = require('jsonwebtoken');
+    // ✅ 1. Create JWT token (expiry must be in SECONDS)
     const token = jwt.sign(
-      { iss: process.env.ZOOM_API_KEY, exp: ((new Date()).getTime() + 5000) },
+      {
+        iss: process.env.ZOOM_API_KEY,
+        exp: Math.floor(Date.now() / 1000) + 60, // valid for 1 minute
+      },
       process.env.ZOOM_API_SECRET
     );
 
+    // ✅ 2. Call Zoom API
     const meetingsRes = await axios.get(
-      `https://api.zoom.us/v2/users/${process.env.ZOOM_USER_ID}/meetings?type=upcoming`,
+      `https://api.zoom.us/v2/users/${process.env.ZOOM_USER_ID}/meetings?type=scheduled`,
       {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
     );
 
+    // ✅ 3. Return meetings
     return {
       statusCode: 200,
-      body: JSON.stringify(meetingsRes.data.meetings)
+      body: JSON.stringify(meetingsRes.data.meetings),
     };
   } catch (error) {
-    console.log(error.response?.data || error.message);
+    console.error("Zoom API Error:", error.response?.data || error.message);
+
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.response?.data || error.message })
+      body: JSON.stringify({
+        error: error.response?.data || error.message,
+      }),
     };
   }
 };
