@@ -1,20 +1,30 @@
 const axios = require("axios");
-const jwt = require("jsonwebtoken");
 
 exports.handler = async () => {
   try {
-    const token = jwt.sign(
+    // 1. Get OAuth token
+    const tokenRes = await axios.post(
+      "https://zoom.us/oauth/token",
+      null,
       {
-        iss: process.env.ZOOM_API_KEY,
-        exp: Math.floor(Date.now() / 1000) + 60,
-      },
-      process.env.ZOOM_API_SECRET
+        params: {
+          grant_type: "account_credentials",
+          account_id: process.env.ZOOM_ACCOUNT_ID,
+        },
+        auth: {
+          username: process.env.ZOOM_CLIENT_ID,
+          password: process.env.ZOOM_CLIENT_SECRET,
+        },
+      }
     );
 
+    const accessToken = tokenRes.data.access_token;
+
+    // 2. Get meetings
     const meetingsRes = await axios.get(
       `https://api.zoom.us/v2/users/${process.env.ZOOM_USER_ID}/meetings?type=scheduled`,
       {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${accessToken}` },
       }
     );
 
@@ -23,12 +33,13 @@ exports.handler = async () => {
       body: JSON.stringify(meetingsRes.data.meetings),
     };
   } catch (error) {
-    // 🔥 IMPORTANT: return the real Zoom error
+    // 🔥 SHOW REAL ERROR
     return {
       statusCode: 500,
       body: JSON.stringify({
         message: "Zoom API failed",
         zoomError: error.response?.data || error.message,
+        status: error.response?.status,
       }),
     };
   }
